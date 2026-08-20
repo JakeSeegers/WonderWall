@@ -14,14 +14,15 @@ const WEBHOOK_SECRET = Deno.env.get("LS_WEBHOOK_SECRET")!;
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
-// Maps Lemon Squeezy variant ids -> how many sprays a pack/subscription grants.
-// PLACEHOLDER ids -- replace with the real variant ids from the published
-// products (20 Sprays $6, 25 Auto Sprays $5/mo, 5 Sprays $2, 50 Sprays $12).
+// Maps Lemon Squeezy variant ids -> how many sprays a pack grants.
+// Real variant ids from the published products.
 const PACK_SPRAYS: Record<string, number> = {
-  "VARIANT_ID_PACK_5": 5,
-  "VARIANT_ID_PACK_20": 20,
-  "VARIANT_ID_PACK_50": 50,
+  "2040047": 5,   // 5 Sprays - $2
+  "2040118": 20,  // 20 Sprays - $6.00
+  "2040106": 50,  // 50 Sprays - $12.00
 };
+// 25 Auto Sprays - $5.00/month
+const SUBSCRIPTION_VARIANT_ID = "2040109";
 const SUBSCRIPTION_MONTHLY_SPRAYS = 25;
 
 async function verifySignature(rawBody: string, signatureHeader: string | null): Promise<boolean> {
@@ -98,6 +99,10 @@ Deno.serve(async (req) => {
       const sessionId = await resolveSessionId();
       if (!sessionId) break;
       const attrs = payload.data.attributes;
+
+      // guards against silently mis-granting if a second subscription
+      // tier is ever added later without a matching branch here
+      if (String(attrs.variant_id) !== SUBSCRIPTION_VARIANT_ID) break;
 
       await supabase.from("wall_subscriptions").upsert({
         session_id: sessionId,
