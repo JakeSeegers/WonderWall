@@ -1,0 +1,52 @@
+[
+  {
+    "id": "godaigo",
+    "name": "Godaigo",
+    "url": "https://jakeseegers.github.io/Godaigo.Elements/",
+    "color": "#a78bfa",
+    "text": "#1c1032",
+    "definition": "A hexagon-tile strategy board game built around six elemental scroll types (Fire, Water, Earth, Wind, Void, Catacomb) and tactical positioning, playable solo or against other people.",
+    "edit": "Added automated vulnerability scanning to the build.",
+    "plans": "Next: finish the Wandering River scroll effect, then reaction-phase support."
+  },
+  {
+    "id": "onesixtyeight",
+    "name": "168 Hours",
+    "url": "https://jakeseegers.github.io/OneSixtyEight/",
+    "color": "#22d3ee",
+    "text": "#04222a",
+    "definition": "A time-tracking PWA that pings you at random moments to ask what you're doing right now, building an honest picture of your week without manual logging.",
+    "edit": "Made the check-in history collapsible — last 7 days, with a Show all option.",
+    "plans": "Next: a radial 168-hour wheel chart, plus day-streak tracking."
+  },
+  {
+    "id": "wordsearch",
+    "name": "Word Search Maker",
+    "url": "https://jakeseegers.github.io/AdvancedWordSearchGenerator/",
+    "color": "#fbbf24",
+    "text": "#241a02",
+    "definition": "A word search generator with a twist: some grids hide a secret word encoded across two different fonts instead of printing it outright.",
+    "edit": "Fixed the hidden Sunday answer re-hiding itself when Reveal gets toggled back off.",
+    "plans": "Next: more puzzle variants beyond the font-encoded hidden word."
+  },
+  {
+    "id": "psych-fund",
+    "name": "General Psychology Study Fund",
+    "url": null,
+    "color": "#34d399",
+    "text": "#052e20",
+    "definition": "Not a coded project — a personal pledge to put real time and money toward psychology coursework and research. It promises nothing on its own; it's only as real as the support that keeps it up.",
+    "edit": "Committed to this one.",
+    "plans": "Keep showing up for it, one study session at a time."
+  },
+  {
+    "id": "touch-grass",
+    "name": "Touch Grass",
+    "url": null,
+    "color": "#fb923c",
+    "text": "#2a1502",
+    "definition": "Not a coded project — a personal pledge to spend less time at a screen and more time actually outside.",
+    "edit": "Still slowly losing ground to the todo list.",
+    "plans": "Keep touching grass anyway."
+  }
+]

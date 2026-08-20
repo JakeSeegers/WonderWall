@@ -286,6 +286,18 @@
     color: var(--parchment-dim);
     line-height: 1.35;
   }
+  .focus-visit {
+    font-family: var(--font-display);
+    font-size: 9px;
+    color: var(--glue);
+    text-decoration: none;
+    border: 2px solid var(--glue-dim);
+    padding: 8px;
+    text-align: center;
+    display: block;
+  }
+  .focus-visit:hover { background: rgba(47,224,245,0.08); }
+  .focus-visit[hidden] { display: none; }
   .focus-actions {
     display: flex;
     gap: 6px;
@@ -649,6 +661,10 @@
       </div>
       <div class="focus-eta" id="focusEta"></div>
       <div class="focus-block">
+        <span class="k">DEFINITION</span>
+        <span class="v" id="focusDefinition"></span>
+      </div>
+      <div class="focus-block">
         <span class="k">LAST EDIT</span>
         <span class="v" id="focusEdit"></span>
       </div>
@@ -656,6 +672,7 @@
         <span class="k">PLANS</span>
         <span class="v" id="focusPlans"></span>
       </div>
+      <a class="focus-visit" id="focusVisit" href="#" target="_blank" rel="noopener">VISIT →</a>
       <div class="focus-actions">
         <button class="focus-spray-btn" id="focusSprayBtn"><span>🧴</span><span>SPRAY</span></button>
         <button class="focus-pin-btn" id="focusPinBtn" title="Pin for auto-spray">📌</button>
@@ -707,23 +724,9 @@
   var reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   var TOWER_PX = 9600; // must match .tower height in CSS
 
-  var PROJECT_SEED = [
-    { id: 1, name: 'Mobile App',        color: '#ec4899', text: '#fff', glue: 0 },
-    { id: 2, name: 'Website Redesign',  color: '#22d3ee', text: '#04222a', glue: 0 },
-    { id: 3, name: 'API Integration',   color: '#a78bfa', text: '#1c1032', glue: 0 },
-    { id: 4, name: 'Database Migration',color: '#fbbf24', text: '#241a02', glue: 0 },
-    { id: 5, name: 'User Research',     color: '#34d399', text: '#052e20', glue: 0 },
-    { id: 6, name: 'Marketing Campaign',color: '#fb923c', text: '#2a1502', glue: 0 }
-  ];
-
-  var BLURBS = {
-    1: { edit: 'Shipped the new onboarding flow.', plans: 'Next: push notifications, then an offline mode.' },
-    2: { edit: 'Swapped in the new component library.', plans: 'Next: rebuild the pricing page, then an accessibility pass.' },
-    3: { edit: 'Connected the billing provider webhook.', plans: 'Next: rate limiting, then public API docs.' },
-    4: { edit: 'Finished the read-replica cutover.', plans: 'Next: archive cold data, trim the old schema.' },
-    5: { edit: 'Wrapped the second round of user interviews.', plans: 'Next: synthesize findings into a report.' },
-    6: { edit: 'Launched the spring email sequence.', plans: 'Next: retargeting campaign, then a partner co-post.' }
-  };
+  // Project content (name, color, url, blurb/definition/plans) lives in
+  // projects.json, not here — see that file to add or edit a project, and
+  // the update-wall-project skill for the guided workflow.
 
   var DROPLET_IMG = 'data:image/png;base64,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';
   var FRAME_IMG = 'data:image/png;base64,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';
@@ -738,11 +741,9 @@
   var state = {
     balance: 12,
     subscribed: false,
-    pinnedId: PROJECT_SEED[0].id,
-    focusedId: PROJECT_SEED[0].id,
-    projects: PROJECT_SEED.map(function (p) {
-      return Object.assign({}, p, { yPos: 8 + Math.random() * 30 });
-    })
+    pinnedId: null,
+    focusedId: null,
+    projects: [] // populated from projects.json once it loads
   };
 
   var wallEl = document.getElementById('wall');
@@ -758,8 +759,10 @@
   var focusSwatch = document.getElementById('focusSwatch');
   var focusName = document.getElementById('focusName');
   var focusEta = document.getElementById('focusEta');
+  var focusDefinition = document.getElementById('focusDefinition');
   var focusEdit = document.getElementById('focusEdit');
   var focusPlans = document.getElementById('focusPlans');
+  var focusVisit = document.getElementById('focusVisit');
   var focusSprayBtn = document.getElementById('focusSprayBtn');
   var focusPinBtn = document.getElementById('focusPinBtn');
 
@@ -890,10 +893,17 @@
     var p = findProject(id);
     focusSwatch.style.background = p.color;
     focusName.textContent = p.name;
-    focusEdit.textContent = BLURBS[id].edit;
-    focusPlans.textContent = BLURBS[id].plans;
+    focusDefinition.textContent = p.definition || '';
+    focusEdit.textContent = p.edit || '';
+    focusPlans.textContent = p.plans || '';
+    if (p.url) {
+      focusVisit.href = p.url;
+      focusVisit.hidden = false;
+    } else {
+      focusVisit.hidden = true;
+    }
     Object.keys(cardEls).forEach(function (pid) {
-      cardEls[pid].card.classList.toggle('focused', Number(pid) === id);
+      cardEls[pid].card.classList.toggle('focused', pid === String(id));
     });
     renderMinimap();
     renderFocusStats();
@@ -1127,7 +1137,7 @@
     });
     pinSelect.value = String(state.pinnedId);
     pinSelect.addEventListener('change', function () {
-      state.pinnedId = Number(pinSelect.value);
+      state.pinnedId = pinSelect.value;
       renderPins();
     });
   }
@@ -1155,14 +1165,33 @@
     document.getElementById('tray').scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth' });
   });
 
-  buildMinimap();
-  buildCards();
   buildPacks();
-  buildPinSelect();
   renderBalance();
-  setFocus(state.focusedId);
-  renderPositions();
-  renderPins();
+
+  fetch('./projects.json')
+    .then(function (r) {
+      if (!r.ok) throw new Error('projects.json ' + r.status);
+      return r.json();
+    })
+    .then(function (data) {
+      state.projects = data.map(function (p) {
+        return Object.assign({ glue: 0 }, p, { yPos: 8 + Math.random() * 30 });
+      });
+      state.pinnedId = state.projects[0].id;
+      state.focusedId = state.projects[0].id;
+
+      buildMinimap();
+      buildCards();
+      buildPinSelect();
+      setFocus(state.focusedId);
+      renderPositions();
+      renderPins();
+      requestAnimationFrame(tick);
+    })
+    .catch(function (err) {
+      console.error('Failed to load projects.json', err);
+      toast('Could not load projects — check projects.json');
+    });
 
   window.addEventListener('resize', updateCamera);
 
@@ -1206,6 +1235,6 @@
     renderPositions();
     requestAnimationFrame(tick);
   }
-  requestAnimationFrame(tick);
+  // tick() is kicked off once projects.json has loaded, see the fetch above.
 })();
 </script>
