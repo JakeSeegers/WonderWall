@@ -20,7 +20,7 @@ const PACK_SPRAYS: Record<string, number> = {
   "VARIANT_ID_PACK_20": 20,
   "VARIANT_ID_PACK_50": 50,
 };
-const SUBSCRIPTION_MONTHLY_SPRAYS = 10;
+const SUBSCRIPTION_MONTHLY_SPRAYS = 25;
 
 async function verifySignature(rawBody: string, signatureHeader: string | null): Promise<boolean> {
   if (!signatureHeader) return false;

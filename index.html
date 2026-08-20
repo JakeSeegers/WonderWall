@@ -463,7 +463,7 @@
         <div class="section-label">MONTHLY REFILL</div>
         <div class="sub-card">
           <div class="info">
-            <span class="qty">10 SPRAYS / MONTH</span>
+            <span class="qty">25 SPRAYS / MONTH</span>
             <span class="desc">Auto-applied to your pinned project every cycle, so it never falls even if you forget.</span>
           </div>
           <span class="price">$5.00/mo</span>
@@ -769,12 +769,12 @@
   subBtn.addEventListener('click', function () {
     state.subscribed = !state.subscribed;
     if (state.subscribed) {
-      state.balance += 10;
+      state.balance += 25;
       renderBalance();
       subBtn.textContent = 'SUBSCRIBED ✓ (CANCEL)';
       subBtn.classList.add('active');
       subStatus.style.display = 'flex';
-      toast('Subscribed — 10 sprays granted, auto-glue armed (demo)');
+      toast('Subscribed — 25 sprays granted, auto-glue armed (demo)');
       sparkBurst(document.querySelector('.sub-card'), 'var(--coin)');
     } else {
       subBtn.textContent = 'SUBSCRIBE — $5/mo';
