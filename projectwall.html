@@ -1,0 +1,379 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>8-Bit Project Wall</title>
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { 
+      font-family: 'Press Start 2P', cursive; 
+      overflow: hidden;
+      image-rendering: pixelated;
+    }
+    .pixel-wall {
+      background-color: #6b4423;
+      background-image: 
+        linear-gradient(90deg, transparent 0px, transparent 79px, #2d1810 79px, #2d1810 81px, transparent 81px),
+        linear-gradient(0deg, transparent 0px, transparent 39px, #2d1810 39px, #2d1810 41px, transparent 41px),
+        repeating-linear-gradient(90deg, #8b5a3c 0px, #8b5a3c 40px, #7a4930 40px, #7a4930 80px),
+        repeating-linear-gradient(0deg, #9d6b4f 0px, #9d6b4f 20px, #8b5a3c 20px, #8b5a3c 40px);
+      position: relative;
+    }
+    .scanlines::after {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: repeating-linear-gradient(0deg, transparent 0px, transparent 2px, rgba(0,0,0,0.1) 2px, rgba(0,0,0,0.1) 4px);
+      pointer-events: none;
+      z-index: 1000;
+    }
+    @keyframes shake { 0%, 100% { transform: translate(0, 0); } 25% { transform: translate(-2px, 2px); } 75% { transform: translate(2px, -2px); } }
+    .shake { animation: shake 0.1s ease-in-out; }
+    .glow-0 { box-shadow: none; }
+    .glow-1 { box-shadow: 0 0 8px 2px rgba(34, 211, 238, 0.3); }
+    .glow-2 { box-shadow: 0 0 12px 3px rgba(34, 211, 238, 0.5); }
+    .glow-3 { box-shadow: 0 0 16px 4px rgba(34, 211, 238, 0.7); }
+    .glow-4 { box-shadow: 0 0 20px 5px rgba(34, 211, 238, 0.9); }
+    .glow-5 { box-shadow: 0 0 24px 6px rgba(34, 211, 238, 1), 0 0 32px 8px rgba(34, 211, 238, 0.6); }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+  
+  <script type="text/babel">
+    const { useState, useEffect, useRef } = React;
+
+    const PROJECTS = [
+      { id: 1, title: 'Mobile App', color: '#ec4899', textColor: '#fff' },
+      { id: 2, title: 'Website Redesign', color: '#22d3ee', textColor: '#000' },
+      { id: 3, title: 'API Integration', color: '#a78bfa', textColor: '#fff' },
+      { id: 4, title: 'Database Migration', color: '#fbbf24', textColor: '#000' },
+      { id: 5, title: 'User Research', color: '#10b981', textColor: '#000' },
+      { id: 6, title: 'Marketing Campaign', color: '#f97316', textColor: '#fff' },
+    ];
+
+    function App() {
+      const [isLoggedIn, setIsLoggedIn] = useState(false);
+      const [userEmail, setUserEmail] = useState('');
+      const [sprayCount, setSprayCount] = useState(5);
+      const [projects, setProjects] = useState([]);
+      const [particles, setParticles] = useState([]);
+      const [shake, setShake] = useState(false);
+      const [speedMultiplier, setSpeedMultiplier] = useState(1);
+      const [showSpeedIndicator, setShowSpeedIndicator] = useState(false);
+      const animationRef = useRef();
+      const lastTimeRef = useRef(Date.now());
+      const keysPressed = useRef({});
+
+      useEffect(() => {
+        const initialProjects = PROJECTS.map((p, i) => ({
+          ...p,
+          yPosition: Math.random() * 20,
+          xOffset: (Math.random() - 0.5) * 80,
+          glueLevel: 0,
+          rotation: 0,
+        }));
+        setProjects(initialProjects);
+      }, []);
+
+      useEffect(() => {
+        const handleKeyDown = (e) => {
+          keysPressed.current[e.key] = true;
+          
+          if (keysPressed.current['Control'] && keysPressed.current['Shift']) {
+            if (e.key === 'ArrowUp') {
+              e.preventDefault();
+              setSpeedMultiplier(prev => Math.min(prev + 0.1, 10));
+              setShowSpeedIndicator(true);
+              setTimeout(() => setShowSpeedIndicator(false), 2000);
+            } else if (e.key === 'ArrowDown') {
+              e.preventDefault();
+              setSpeedMultiplier(prev => Math.max(prev - 0.1, 0.1));
+              setShowSpeedIndicator(true);
+              setTimeout(() => setShowSpeedIndicator(false), 2000);
+            } else if (e.key === ' ') {
+              e.preventDefault();
+              setSpeedMultiplier(1);
+              setShowSpeedIndicator(true);
+              setTimeout(() => setShowSpeedIndicator(false), 2000);
+            }
+          }
+        };
+
+        const handleKeyUp = (e) => {
+          keysPressed.current[e.key] = false;
+        };
+
+        window.addEventListener('keydown', handleKeyDown);
+        window.addEventListener('keyup', handleKeyUp);
+        return () => {
+          window.removeEventListener('keydown', handleKeyDown);
+          window.removeEventListener('keyup', handleKeyUp);
+        };
+      }, []);
+
+      useEffect(() => {
+        const animate = () => {
+          const now = Date.now();
+          const deltaTime = (now - lastTimeRef.current) / 1000;
+          lastTimeRef.current = now;
+
+          setProjects(prevProjects => {
+            return prevProjects.map(project => {
+              const baseSpeed = 1 * speedMultiplier;
+              const fallingSpeed = baseSpeed / (1 + project.glueLevel * 0.2);
+              const newYPosition = project.yPosition + fallingSpeed * deltaTime;
+              
+              let newGlueLevel = project.glueLevel - (0.5 * deltaTime * speedMultiplier);
+              if (newGlueLevel < 0) newGlueLevel = 0;
+
+              let newRotation = project.rotation;
+              if (newYPosition > 95) {
+                newRotation = ((newYPosition - 95) / 5) * 15;
+              }
+
+              return {
+                ...project,
+                yPosition: newYPosition,
+                glueLevel: newGlueLevel,
+                rotation: newRotation,
+              };
+            });
+          });
+
+          setParticles(prevParticles => 
+            prevParticles
+              .map(p => ({
+                ...p,
+                x: p.x + p.vx * deltaTime * 60,
+                y: p.y + p.vy * deltaTime * 60,
+                life: p.life - deltaTime,
+                rotation: p.rotation + p.rotationSpeed * deltaTime * 60,
+              }))
+              .filter(p => p.life > 0)
+          );
+
+          animationRef.current = requestAnimationFrame(animate);
+        };
+
+        animationRef.current = requestAnimationFrame(animate);
+        return () => cancelAnimationFrame(animationRef.current);
+      }, [speedMultiplier]);
+
+      useEffect(() => {
+        const collisionCheck = setInterval(() => {
+          setProjects(prevProjects => {
+            const updated = [...prevProjects];
+            for (let i = 0; i < updated.length; i++) {
+              for (let j = i + 1; j < updated.length; j++) {
+                const p1 = updated[i];
+                const p2 = updated[j];
+                const xDist = Math.abs(p1.xOffset - p2.xOffset);
+                const yDist = Math.abs(p1.yPosition - p2.yPosition);
+                
+                if (xDist < 25 && yDist < 15) {
+                  const pushAmount = 3;
+                  if (p1.xOffset < p2.xOffset) {
+                    if (p1.xOffset > -40) updated[i].xOffset -= pushAmount;
+                    if (p2.xOffset < 40) updated[j].xOffset += pushAmount;
+                  } else {
+                    if (p1.xOffset < 40) updated[i].xOffset += pushAmount;
+                    if (p2.xOffset > -40) updated[j].xOffset -= pushAmount;
+                  }
+                }
+              }
+            }
+            return updated;
+          });
+        }, 500);
+
+        return () => clearInterval(collisionCheck);
+      }, []);
+
+      const handleSpray = (projectId) => {
+        if (!isLoggedIn || sprayCount <= 0) {
+          if (!isLoggedIn) alert('Please log in to spray glue!');
+          else alert('Out of sprays! Watch an ad or purchase more (coming soon)');
+          return;
+        }
+
+        setProjects(prev => prev.map(p => 
+          p.id === projectId 
+            ? { ...p, glueLevel: p.glueLevel + 6 } 
+            : p
+        ));
+        
+        setSprayCount(prev => prev - 1);
+        
+        const project = projects.find(p => p.id === projectId);
+        if (project) {
+          const newParticles = Array.from({ length: 28 }, (_, i) => {
+            const angle = (i / 28) * Math.PI * 2;
+            const speed = 2 + Math.random() * 3;
+            return {
+              id: Date.now() + i,
+              x: 50,
+              y: 50,
+              vx: Math.cos(angle) * speed,
+              vy: Math.sin(angle) * speed,
+              color: project.color,
+              life: 0.8,
+              rotation: Math.random() * 360,
+              rotationSpeed: (Math.random() - 0.5) * 10,
+            };
+          });
+          setParticles(prev => [...prev, ...newParticles]);
+        }
+
+        setShake(true);
+        setTimeout(() => setShake(false), 100);
+      };
+
+      const handleLogin = () => {
+        const email = prompt('Enter your email:');
+        if (email) {
+          setUserEmail(email);
+          setIsLoggedIn(true);
+          setSprayCount(5);
+        }
+      };
+
+      const handleLogout = () => {
+        setIsLoggedIn(false);
+        setUserEmail('');
+        setSprayCount(0);
+      };
+
+      const getGlowClass = (glueLevel) => {
+        if (glueLevel < 2) return 'glow-0';
+        if (glueLevel < 5) return 'glow-1';
+        if (glueLevel < 8) return 'glow-2';
+        if (glueLevel < 12) return 'glow-3';
+        if (glueLevel < 18) return 'glow-4';
+        return 'glow-5';
+      };
+
+      return (
+        <div className={`h-screen flex flex-col ${shake ? 'shake' : ''}`}>
+          <header className="bg-gray-900 text-white px-6 py-4 flex items-center justify-between z-10" style={{ fontSize: '10px' }}>
+            <h1 className="text-xl">PROJECT WALL</h1>
+            <div className="flex items-center gap-6">
+              {isLoggedIn && (
+                <div className="flex items-center gap-2 text-cyan-400">
+                  <span className="text-2xl">🧴</span>
+                  <span className="text-lg">x{sprayCount}</span>
+                </div>
+              )}
+              <button 
+                onClick={isLoggedIn ? handleLogout : handleLogin}
+                className="px-4 py-2 bg-yellow-500 text-black hover:bg-yellow-400 transition-colors"
+              >
+                {isLoggedIn ? 'LOGOUT' : 'LOGIN'}
+              </button>
+            </div>
+          </header>
+
+          {showSpeedIndicator && (
+            <div className="fixed top-20 right-6 bg-purple-600 text-white px-4 py-2 z-50 text-xs">
+              <div>{speedMultiplier.toFixed(1)}x</div>
+              <div className="text-[8px] opacity-75">
+                {speedMultiplier > 1 ? 'FAST FORWARD' : speedMultiplier < 1 ? 'SLOW MOTION' : 'NORMAL'}
+              </div>
+            </div>
+          )}
+
+          <div className="flex-1 pixel-wall scanlines relative overflow-hidden">
+            {projects.map(project => {
+              const opacity = project.yPosition > 95 ? Math.max(0, 1 - (project.yPosition - 95) / 3) : 1;
+              const scale = project.yPosition > 95 ? Math.max(0.3, 1 - (project.yPosition - 95) / 10) : 1;
+              
+              if (project.yPosition > 100) return null;
+
+              return (
+                <div
+                  key={project.id}
+                  className={`absolute ${getGlowClass(project.glueLevel)}`}
+                  style={{
+                    top: `${project.yPosition}%`,
+                    left: `calc(50% + ${project.xOffset}%)`,
+                    transform: `translate(-50%, -50%) rotate(${project.rotation}deg) scale(${scale})`,
+                    opacity,
+                    transition: 'box-shadow 0.3s ease',
+                    width: '200px',
+                  }}
+                >
+                  <div 
+                    className="relative p-4 border-4"
+                    style={{ 
+                      backgroundColor: project.color,
+                      color: project.textColor,
+                      borderColor: project.textColor + '40',
+                    }}
+                  >
+                    <div className="absolute top-1 left-1 w-2 h-2" style={{ backgroundColor: project.textColor, opacity: 0.3 }}></div>
+                    <div className="absolute top-1 right-1 w-2 h-2" style={{ backgroundColor: project.textColor, opacity: 0.3 }}></div>
+                    <div className="absolute bottom-1 left-1 w-2 h-2" style={{ backgroundColor: project.textColor, opacity: 0.3 }}></div>
+                    <div className="absolute bottom-1 right-1 w-2 h-2" style={{ backgroundColor: project.textColor, opacity: 0.3 }}></div>
+                    
+                    <h3 className="text-xs mb-3 leading-tight">{project.title}</h3>
+                    
+                    <button
+                      onClick={() => handleSpray(project.id)}
+                      className="w-full py-2 bg-black bg-opacity-20 hover:bg-opacity-30 transition-all text-xs flex items-center justify-center gap-2"
+                      style={{ 
+                        opacity: project.glueLevel > 10 ? 0.9 : 0.6,
+                        boxShadow: project.glueLevel > 10 ? '0 0 8px rgba(34, 211, 238, 0.5)' : 'none'
+                      }}
+                    >
+                      <span>🧴</span>
+                      <span>SPRAY</span>
+                    </button>
+
+                    {particles.filter(p => Math.random() < 0.5).map(particle => (
+                      <div
+                        key={particle.id}
+                        className="absolute pointer-events-none"
+                        style={{
+                          left: `${particle.x}%`,
+                          top: `${particle.y}%`,
+                          width: '8px',
+                          height: '8px',
+                          backgroundColor: particle.color,
+                          opacity: particle.life,
+                          transform: `rotate(${particle.rotation}deg)`,
+                        }}
+                      />
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          <div className="bg-gray-800 py-8 flex flex-col items-center justify-center gap-3 relative">
+            <svg width="140" height="120" viewBox="0 0 140 120" style={{ filter: 'drop-shadow(0 4px 6px rgba(0,0,0,0.3))' }}>
+              <rect x="10" y="30" width="120" height="90" fill="#d4a574" stroke="#8b6f47" strokeWidth="3"/>
+              <rect x="10" y="30" width="120" height="20" fill="#f5deb3" stroke="#8b6f47" strokeWidth="3"/>
+              <rect x="15" y="35" width="110" height="10" fill="#8b6f47" opacity="0.3"/>
+              <polygon points="10,30 70,10 130,30" fill="#e8ba7e" stroke="#8b6f47" strokeWidth="3"/>
+              <rect x="50" y="70" width="40" height="30" fill="#6b5a3d" stroke="#3d2f1f" strokeWidth="2"/>
+              <line x1="70" y1="70" x2="70" y2="100" stroke="#3d2f1f" strokeWidth="2"/>
+              <rect x="85" y="78" width="8" height="12" rx="1" fill="#ffd700" stroke="#b8860b" strokeWidth="1"/>
+            </svg>
+            <div className="text-red-500 text-xs">ABANDONED PROJECTS</div>
+          </div>
+        </div>
+      );
+    }
+
+    ReactDOM.render(<App />, document.getElementById('root'));
+  </script>
+</body>
+</html>

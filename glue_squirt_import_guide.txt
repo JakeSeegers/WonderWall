@@ -1,0 +1,60 @@
+GLUE SQUIRT ANIMATION — IMPORT GUIDE
+=====================================
+
+Files:
+- glue_squirt_spritesheet.png  (single row, 6 frames)
+- glue_squirt_preview.gif      (looping preview, not for import)
+
+Sprite sheet layout:
+- Direction: single fixed facing (up-and-to-the-right, matching source sprite)
+- Rows: 1
+- Columns: 6 (frames 1-6, left to right)
+- Frame size: 592 x 592 px each
+- Padding: 10 px transparent margin around every frame (and between frames)
+- Frame content box (ignore the 10px padding when slicing): 592 x 592 at
+  x = 10 + frame_index * (592 + 10), y = 10
+
+Frame-by-frame:
+1. Trigger squeeze / bead forms at nozzle tip (idle -> attack start)
+2. Short glue burst begins
+3. Stream extending
+4. Stream at near-full length
+5. Impact splash at max reach (peak of the attack)
+6. Trailing drips retracting back toward idle
+
+Suggested playback: 6-8 fps, play once per click (not looping) for the
+attack animation. Frame 6 blends back into your idle pose.
+
+--- Unity ---
+1. Set the sheet's Texture Type to "Sprite (2D and UI)" and Sprite Mode to
+   "Multiple".
+2. Open Sprite Editor. Since padding is uneven-friendly, use "Slice > Grid By
+   Cell Size" with Cell Size 612 x 612 (592 frame + 10px padding on each
+   side... note: for a perfectly even grid, re-export with automated slicing,
+   or manually set 6 slices at the x-offsets listed above).
+3. Build an Animator Controller, drag the 6 sliced sprites into a new
+   Animation clip, set sample rate ~7 fps, and trigger it from your existing
+   "Attack" trigger/click event.
+
+--- Godot ---
+1. Import the sheet as a Texture.
+2. Add an AnimatedSprite2D (or Sprite2D + AnimationPlayer).
+3. Create a SpriteFrames resource, add 6 frames using AtlasTexture regions:
+   Region = (10 + i*602, 10, 592, 592) for i = 0..5.
+4. Name the animation "attack_glue", set speed to ~7 fps, loop = false.
+5. Play it on the click/attack input action.
+
+--- GameMaker ---
+1. Import the sheet as a Sprite, then use "Edit Image" or the Sprite Editor's
+   grid tool to split into a strip: 6 sub-images, each 612 x 612 (592 + 10
+   padding), starting at (10,10).
+2. Set the sprite's speed to ~7 fps (or control manually via image_index).
+3. On the mouse-click event, set image_index = 0 and switch to this sprite
+   for a single non-looping playback of the attack.
+
+Notes:
+- Only one direction/pose is included, matching your reference art (no
+  walk/idle/run/jump/death states in this version).
+- Colors match the bottle's existing green nozzle accents for the glue.
+- If you need pixel-perfect grid slicing without the 10px gaps, ask and I can
+  re-export with zero padding and frames packed edge-to-edge.
