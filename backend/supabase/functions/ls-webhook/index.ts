@@ -1,11 +1,12 @@
-// Lemon Squeezy webhook receiver.
+// Lemon Squeezy webhook receiver, deployed on the OneSixtyEight Supabase
+// project under the wall_ table prefix.
 //
 // Verifies the signature against the RAW request body (must happen before
 // any JSON parsing — re-serializing a parsed body will not byte-match what
 // Lemon Squeezy signed), then applies the event to the ledger.
 //
-// Idempotent by construction: `ledger.external_id` has a unique index, so a
-// duplicate delivery of the same event just fails the insert harmlessly.
+// Idempotent by construction: `wall_ledger.external_id` has a unique index,
+// so a duplicate delivery of the same event just fails the insert harmlessly.
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
@@ -14,7 +15,8 @@ const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
 // Maps Lemon Squeezy variant ids -> how many sprays a pack/subscription grants.
-// Configure these to match the variants created in the Lemon Squeezy dashboard.
+// PLACEHOLDER ids -- replace with the real variant ids from the published
+// products (20 Sprays $6, 25 Auto Sprays $5/mo, 5 Sprays $2, 50 Sprays $12).
 const PACK_SPRAYS: Record<string, number> = {
   "VARIANT_ID_PACK_5": 5,
   "VARIANT_ID_PACK_20": 20,
@@ -61,7 +63,7 @@ Deno.serve(async (req) => {
   async function resolveSessionId(): Promise<string | null> {
     if (!sessionToken) return null;
     const { data, error } = await supabase
-      .from("sessions")
+      .from("wall_sessions")
       .upsert({ id: sessionToken }, { onConflict: "id", ignoreDuplicates: true })
       .select("id")
       .single();
@@ -77,12 +79,12 @@ Deno.serve(async (req) => {
       const attrs = payload.data.attributes;
       if (attrs.status !== "paid") break; // ignore unpaid/refunded-at-creation edge cases
 
-      const variantId = String(payload.data.attributes.first_order_item?.variant_id ?? "");
+      const variantId = String(attrs.first_order_item?.variant_id ?? "");
       const sprays = PACK_SPRAYS[variantId];
       const sessionId = await resolveSessionId();
       if (!sprays || !sessionId) break;
 
-      await supabase.from("ledger").insert({
+      await supabase.from("wall_ledger").insert({
         session_id: sessionId,
         kind: "grant",
         amount: sprays,
@@ -97,15 +99,16 @@ Deno.serve(async (req) => {
       if (!sessionId) break;
       const attrs = payload.data.attributes;
 
-      await supabase.from("subscriptions").upsert({
+      await supabase.from("wall_subscriptions").upsert({
         session_id: sessionId,
-        ls_subscription_id: String(payload.data.id),
+        provider: "lemonsqueezy",
+        provider_subscription_id: String(payload.data.id),
         variant_id: String(attrs.variant_id),
         status: "active",
         current_period_end: attrs.renews_at,
-      }, { onConflict: "ls_subscription_id" });
+      }, { onConflict: "provider,provider_subscription_id" });
 
-      await supabase.from("ledger").insert({
+      await supabase.from("wall_ledger").insert({
         session_id: sessionId,
         kind: "grant",
         amount: SUBSCRIPTION_MONTHLY_SPRAYS,
@@ -117,13 +120,14 @@ Deno.serve(async (req) => {
 
     case "subscription_payment_success": {
       const { data: sub } = await supabase
-        .from("subscriptions")
+        .from("wall_subscriptions")
         .select("session_id")
-        .eq("ls_subscription_id", String(payload.data.id))
+        .eq("provider", "lemonsqueezy")
+        .eq("provider_subscription_id", String(payload.data.id))
         .single();
       if (!sub) break;
 
-      await supabase.from("ledger").insert({
+      await supabase.from("wall_ledger").insert({
         session_id: sub.session_id,
         kind: "grant",
         amount: SUBSCRIPTION_MONTHLY_SPRAYS,
@@ -137,9 +141,13 @@ Deno.serve(async (req) => {
     case "subscription_cancelled":
     case "subscription_expired": {
       await supabase
-        .from("subscriptions")
-        .update({ status: eventName === "subscription_cancelled" ? "cancelled" : "expired", updated_at: new Date().toISOString() })
-        .eq("ls_subscription_id", String(payload.data.id));
+        .from("wall_subscriptions")
+        .update({
+          status: eventName === "subscription_cancelled" ? "cancelled" : "expired",
+          updated_at: new Date().toISOString(),
+        })
+        .eq("provider", "lemonsqueezy")
+        .eq("provider_subscription_id", String(payload.data.id));
       break;
     }
 
